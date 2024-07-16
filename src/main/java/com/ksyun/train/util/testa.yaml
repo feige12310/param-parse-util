@@ -1,0 +1,10 @@
+ApiVersion: v1
+Container: "Null"
+Cpu: 3
+Memory: 4.0
+Command:
+  - /bin/bash
+  - -c
+  - sleep 20
+Metadata:
+  Name: my-pod
