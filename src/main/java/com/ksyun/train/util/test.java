@@ -5,6 +5,9 @@ import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,20 +16,22 @@ import java.util.Map;
 
 public class test {
 
-    public static <T> T parse(Class<T> clazz, String filePath) throws IOException, IllegalAccessException, InstantiationException {
+    public static <T> T parse(Class<T> clazz, String filePath) throws IOException, IllegalAccessException, InstantiationException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException {
 
         Yaml yaml = new Yaml(new Constructor(Map.class));
         FileInputStream inputStream = new FileInputStream(filePath);
         Map<String, Object> yamlData = (Map<String, Object>) yaml.load(inputStream);
 
-        T obj=setValue(clazz,yamlData);
+        T obj= (T) setValue(clazz.getName(),yamlData);
         return obj;
     }
 
-    private static <T> T setValue(Class<T> clazz, Map<String, Object> yamlData) throws InstantiationException, IllegalAccessException {
+    private static Object setValue(String className, Map<String, Object> yamlData) throws InstantiationException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException {
+        System.out.println(className+"classname66666");
+        Class<?> clazz = Class.forName(className);
+        Object obj = clazz.getDeclaredConstructor().newInstance();
+        System.out.println("clazz begin\t"+obj.toString());
 
-        T obj = clazz.newInstance();
-        System.out.println(obj.toString());
         for (Field field : clazz.getDeclaredFields()) {
 
             field.setAccessible(true);
@@ -36,26 +41,154 @@ public class test {
 
             if(field.isAnnotationPresent(SkipMappingValueAnnotation.class) || !yamlData.containsKey(yamlName))
                 continue;
-            System.out.print(yamlName+":\t"+String.valueOf(value)+"\t");
+
+            System.out.print(field.getType()+":\t"+String.valueOf(value)+"\t");
+
             if (value == null || "NULL".equalsIgnoreCase(String.valueOf(value)) ) {
                 field.set(obj, getDefaultValue(field.getType()));
                 System.out.println("moren\t" + obj.toString());
             } else {
                 if (field.getType().isAssignableFrom(List.class)) {
-                    field.set(obj, value);
-                    System.out.println("liebiao \t" + obj.toString());
+//                    System.out.println("listtype\t"+field.getName()+field.getGenericType());
+//                    setListValue(obj,field,value,yamlName,yamlData);
+                    List<?> list = (List<?>) value;
+                    List<Object> objectList = new ArrayList<>();
+                    for (Object item : list) {
+                        if (item instanceof Map) {
+                            System.out.println("111111111111");
+//                            String itemClassName = field.getGenericType().getTypeName().replaceAll("^.*<(.*)>$", "$1");
+//                            String itemClassName = field.getGenericType().getTypeName();
+
+
+                            Type type= field.getGenericType();
+                            Type acc=null;
+                            if(type instanceof ParameterizedType) {
+                                ParameterizedType parameterizedType = (ParameterizedType) type;
+                                Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                                for(Type t:actualTypeArguments) {
+                                    acc = t;
+                                    System.out.println(t.getTypeName() + "aaaaa");
+                                }
+                            }else
+                                System.out.println(type.getTypeName()+"sassaa");
+                            System.out.println(acc+"cccccc");
+                            Object listItem = setValue(acc.getTypeName(), (Map<String, Object>) item);
+                            objectList.add(listItem);
+
+                        } else if (item.getClass().isPrimitive()||item.getClass().equals(String.class)||item.getClass().equals(BigDecimal.class)) {
+                            objectList.add(item);
+                        } else if (item instanceof List) {
+                            Object listItem = setValue(List.class.getName(), (Map<String, Object>) item);
+                            objectList.add(listItem);
+                        }
+
+
+                    }
+                    field.set(obj, objectList);
+
+
+
+
                 } else if(field.getType().isPrimitive()||field.getType().equals(String.class)||field.getType().equals(BigDecimal.class)) {
-                    field.set(obj, convertValue(field.getType(), value));
-                    System.out.println("jichu \t" + obj.toString());
-                } else {
-                    field.set(obj, setValue(field.getType(),(Map<String, Object>) yamlData.get(yamlName)));
-                    System.out.println("qiantao\t" + obj.toString());
+                    setBaseValue(obj,field,value);
+//                    field.set(obj, value);
+//                    field.set(obj, convertValue(field.getType(), value));
+//                    System.out.println("jichu \t" + obj.toString());
+                }else  {
+                    System.out.println("mmmmmmmmmmmmmmmmmm");
+                    setMapValue(obj,field,yamlName,yamlData);
+//                    field.set(obj, setValue(field.getType(),(Map<String, Object>) yamlData.get(yamlName)));
+//                    System.out.println("qiantao\t" + obj.toString());
                 }
             }
         }
 
         return obj;
     }
+
+    //Pod{metadata=Metadata{generation=0, name='my-pod'}, container=[Container{name='nginx', command=[], environment=null, port=8080, imagePullPolicy='Always'}, Container{name='mysql', command=null, environment=[Environment{key='PORT', value='3306'}, Environment{key='ROOT_PASSWORD', value='123456'}], port=8306, imagePullPolicy='Always'}], cpu=null, memory=4.0, autoCreated=false, apiVersion='v1'}
+    //Pod{metadata=Metadata{generation=0, name='my-pod'}, container=[Container{name='nginx', command=[/bin/bash, -c, sleep 20], environment=null, port=8080, imagePullPolicy='Always'}, Container{name='mysql', command=null, environment=[Environment{key='PORT', value='3306'}, Environment{key='ROOT_PASSWORD', value='123456'}], port=8306, imagePullPolicy='Always'}], cpu=null, memory=4.0, autoCreated=false, apiVersion='v1'}
+    //Pod{metadata=Metadata{generation=0, name='my-pod'}, container=[Container{name='nginx', command=[/bin/bash, -c, sleep 20], environment=null, port=8080, imagePullPolicy='Always'}, Container{name='mysql', command=null, environment=[Environment{key='PORT', value='3306'}, Environment{key='ROOT_PASSWORD', value='33061'}], port=8306, imagePullPolicy='Always'}], cpu=null, memory=4.0, autoCreated=false, apiVersion='v1'}
+    //Pod{metadata=Metadata{generation=0, name='my-pod'}, container=[Container{name='nginx', command=[/bin/bash, -c, sleep 20], environment=null, port=8080, imagePullPolicy='Always'}, Container{name='mysql', command=null, environment=[Environment{key='PORT', value='3306'}, Environment{key='ROOT_PASSWORD', value='123456'}], port=8306, imagePullPolicy='Always'}], cpu=null, memory=4.0, autoCreated=false, apiVersion='v1'}
+
+    //Pod{metadata=Metadata{generation=0, name='my-pod'}, container=[Container{name='nginx', command=[/bin/bash, -c, sleep 20], environment=null, port=8080, imagePullPolicy='Always'}, Container{name='mysql', command=null, environment=[Environment{key='PORT', value='3306'}, Environment{key='ROOT_PASSWORD', value='123456'}], port=8306, imagePullPolicy='Always'}], cpu=6, memory=4.0, autoCreated=false, apiVersion='v1'}
+    //Pod{metadata=Metadata{generation=0, name='my-pod'}, container=[Container{name='nginx', command=[/bin/bash, -c, sleep 20], environment=null, port=8080, imagePullPolicy='Always'}, Container{name='mysql', command=null, environment=[Environment{key='PORT', value='3306'}, Environment{key='ROOT_PASSWORD', value='123456'}], port=8306, imagePullPolicy='Always'}], cpu=null, memory=4.0, autoCreated=false, apiVersion='v1'}
+    //Pod{metadata=null, container=[Container{name='nginx', command=[/bin/bash, -c, sleep 20], environment=null, port=8080, imagePullPolicy='Always'}, Container{name='mysql', command=null, environment=[Environment{key='PORT', value='3306'}, Environment{key='ROOT_PASSWORD', value='123456'}], port=8306, imagePullPolicy='Always'}], cpu=null, memory=4.0, autoCreated=false, apiVersion='v1'}
+//    private static <T> void setListValue(T obj,Field field, Object value,String yamlName,Map<String, Object> yamlData) throws IllegalAccessException, InstantiationException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException {
+//        if(field.getName()==null||field.getName().length()==0)
+//            field.set(obj, value);
+//        List<Object> objectList = new ArrayList<>();
+//        Type type= field.getGenericType();
+//        Type acc=null;
+//        if(type instanceof ParameterizedType) {
+//            ParameterizedType parameterizedType = (ParameterizedType) type;
+//            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+//            for(Type t:actualTypeArguments) {
+//                acc = t;
+//                System.out.println(t.getTypeName() + "aaaaa");
+//            }
+//        }else
+//            System.out.println(type.getTypeName()+"sassaa");
+//        System.out.println(acc+"cccccc");
+//        Class<T> claz = (Class<T>) Class.forName(acc.getTypeName());
+//
+//        for (Object item: ((List) value)) {
+//
+//            System.out.println("itemclass\t"+item.getClass());
+//            if(item.getClass().isAssignableFrom(List.class)) {
+//
+//                setListValue(obj, field, value, yamlName, yamlData);
+//            }
+//            else if(item.getClass().isPrimitive()||item.getClass().equals(String.class)||item.getClass().equals(BigDecimal.class)) {
+//
+//                setBaseValue(obj, field, value);
+//            }
+//            else if(item instanceof Map) {
+//                System.out.println("hashmap "+item.getClass()+field.getName()+" fildtype\t"+field.getGenericType());
+//                System.out.println(((List<?>) value).get(0).getClass());
+//
+//                String itemClassName = field.getGenericType().getTypeName();
+//                Class<?> clazz = Class.forName(itemClassName);
+//                Object obj1 = clazz.getDeclaredConstructor().newInstance();
+//
+//                Object listItem = setValue(clazz, (Map<String, Object>) item);
+//                objectList.add(listItem);
+////                System.out.println(type.getTypeName()+"\tttttttt");
+////                Type acc=null;
+////                if(type instanceof ParameterizedType) {
+////                    ParameterizedType parameterizedType = (ParameterizedType) type;
+////                    Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+////                    for(Type t:actualTypeArguments) {
+////                        acc = t;
+////                        System.out.println(t.getTypeName() + "aaaaa");
+////                    }
+////                }else
+////                    System.out.println(type.getTypeName()+"sassaa");
+//                System.out.println(acc+"cccccc");
+//                Class<T> clazzz = (Class<T>) Class.forName(acc.getTypeName());
+//                System.out.println(clazzz);
+//
+//
+//                field.set(obj,setValue(claz,(Map<String, Object>) yamlData.get(yamlName)));
+//            }
+//        }
+//        System.out.println("value\t"+String.valueOf(value));
+////        field.set(obj, value);
+//        System.out.println("liebiao \t" + obj.toString());
+//    }
+
+    private static <T> void setBaseValue(T obj,Field field, Object value) throws IllegalAccessException {
+        field.set(obj, convertValue(field.getType(), value));
+        System.out.println("jichu \t" + obj.toString());
+    }
+
+    private static <T> void setMapValue(T obj,Field field, String yamlName,Map<String, Object> yamlData) throws InstantiationException, IllegalAccessException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException {
+        System.out.println("maptype\t"+field.getType());
+        field.set(obj, setValue(field.getType().getName(),(Map<String, Object>) yamlData.get(yamlName)));
+        System.out.println("qiantao\t" + obj.toString());
+    }
+
+
     private static Map<String, Object> readYamlFile(String filePath) throws IOException {
         Map<String, Object> yamlData = new HashMap<>();
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {

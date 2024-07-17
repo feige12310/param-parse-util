@@ -12,7 +12,7 @@ import java.util.List;
 import java.io.IOException;
 public class testyaml {
     private int cpu;
-    private String Container="sasas";
+    private String container="sasas";
 
     private BigDecimal memory;
     @SkipMappingValueAnnotation
@@ -21,7 +21,9 @@ public class testyaml {
     public String getApiVersion() {
         return apiVersion;
     }
-
+    public String getContainer() {
+        return container;
+    }
     public BigDecimal getMemory() {
         return memory;
     }
@@ -53,12 +55,11 @@ public class testyaml {
         }
     }
 
-
     @Override
     public String toString() {
         return "testyaml{" +
                 "cpu=" + cpu +
-                ", Container='" + Container + '\'' +
+                ", container='" + container + '\'' +
                 ", memory=" + memory +
                 ", apiVersion='" + apiVersion + '\'' +
                 ", command=" + command +

@@ -2,6 +2,7 @@ ApiVersion: v2
 Metadata:
   Name: my-pod
 AutoCreated: Null
+Cpu: 6
 Memory: 4.0
 Container:
   - Name: nginx

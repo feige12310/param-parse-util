@@ -11,7 +11,7 @@ public class Pod {
 
     private List<Container> container;
 
-    private long cpu ;
+    private Integer cpu ;
 
     private BigDecimal memory;
 
@@ -19,6 +19,30 @@ public class Pod {
 
     @SkipMappingValueAnnotation
     private String apiVersion = "v1";
+
+    public Metadata getMetadata() {
+        return metadata;
+    }
+
+    public List<Container> getContainer() {
+        return container;
+    }
+
+    public Integer getCpu() {
+        return cpu;
+    }
+
+    public BigDecimal getMemory() {
+        return memory;
+    }
+
+    public boolean isAutoCreated() {
+        return autoCreated;
+    }
+
+    public String getApiVersion() {
+        return apiVersion;
+    }
 
     public static class Metadata {
         private long generation;
@@ -108,29 +132,7 @@ public class Pod {
         }
     }
 
-    public Metadata getMetadata() {
-        return metadata;
-    }
 
-    public List<Container> getContainer() {
-        return container;
-    }
-
-    public long getCpu() {
-        return cpu;
-    }
-
-    public BigDecimal getMemory() {
-        return memory;
-    }
-
-    public boolean isAutoCreated() {
-        return autoCreated;
-    }
-
-    public String getApiVersion() {
-        return apiVersion;
-    }
 
     @Override
     public String toString() {

@@ -1,5 +1,4 @@
 ApiVersion: v1
-Container: "Null"
 Cpu: 3
 Memory: 4.0
 Command:
@@ -8,3 +7,10 @@ Command:
   - sleep 20
 Metadata:
   Name: my-pod
+Caca:
+  - hehe:
+    - Key: PORT
+      Value: 3306
+    - Key: ROOT_PASSWORD
+      Value: 123456
+
