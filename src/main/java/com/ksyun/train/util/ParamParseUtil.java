@@ -35,8 +35,8 @@ public class ParamParseUtil {
         } catch (InvalidFilePathException e) {
             System.err.println("无效的文件路径: " + e.getMessage());
         }
-        T objt=null;
-        return objt;
+        T obj = clazz.getDeclaredConstructor().newInstance();
+        return obj;
     }
 
     private static Object setValue(String className, Map<String, Object> yamlData) throws InstantiationException, IllegalAccessException, ClassNotFoundException, NoSuchMethodException, InvocationTargetException {

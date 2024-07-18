@@ -23,11 +23,11 @@ import java.util.Map;
  */
 public class App 
 {
-    public static void main(String[] args) throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, InstantiationException, NoSuchMethodException {
+    public static void main(String[] args) throws Exception {
 //        System.out.println( "Hello World!" );
 //        String yamlpath="src/main/java/com/ksyun/train/util/pod.yaml";
 //        System.out.println(Pod.class);
-        Pod pod = ParamParseUtil.parse(Pod.class, "src/main/java/com/ksyun/train/util/pod.yaml");
+        testyaml pod = ParamParseUtil.parse(testyaml.class, " ");
         System.out.println(pod.toString());
     }
 }

@@ -5,6 +5,12 @@ Command:
   - /bin/bash
   - -c
   - sleep 20
+  - 1
+  - 2
+  - 3
+  - 1
+  - 2
+  - 3
 Metadata:
   Name: my-pod
 Caca:
